@@ -5,7 +5,12 @@
 #define SIZE 1000000
 #define BLOCKSIZE 32
 
-// Device function (i.e. kernel)
+/** Device function (i.e. kernel)
+  Reading 2 * 4 * SIZE bytes
+  Writing 1 * 4 * SIZE bytes
+  Total effective bandwidth = 3 * 4 * SIZE / 10^9 / kernel execution time in seconds
+**/
+
 __global__ void VecAdd(float * A, float * B, float * C, int N)
 {
 
@@ -113,6 +118,13 @@ int main( int argc, char ** argv )
    float milliseconds = 0;
    cudaEventElapsedTime(&milliseconds, start, stop);
    printf("kernel time (ms) : %7.5f\n",milliseconds);
+   printf("effective device bandwidth (GB/s): %5.3f\n",
+          ( 3.0f * 4.0f * (float)SIZE / 1.0e9 ) / 
+          ( milliseconds / 1.0e3 ) );
+   cudaDeviceProp prop;
+   cudaGetDeviceProperties(&prop, 0);
+   printf("peak theorectical device bandwidth (GB/s): %5.3f\n",
+           2.0f * prop.memoryClockRate * (float)(prop.memoryBusWidth / 8 ) / 1.0e6);
 
    // copy results to host
    cudaMemcpy(h_C, d_C, vec_bytes, cudaMemcpyDeviceToHost);
@@ -127,6 +139,9 @@ int main( int argc, char ** argv )
    milliseconds = 0;
    cudaEventElapsedTime(&milliseconds, start, stop);
    printf("cpu function time (ms) : %7.5f\n",milliseconds);
+   printf("effective host bandwidth (GB/s): %5.3f\n",
+          ( 3.0f * 4.0f * (float)SIZE / 1.0e9 ) / 
+          ( milliseconds / 1.0e3 ) );
    compareVecs( gold_C, h_C, SIZE );
 
    // clean up timer variables
