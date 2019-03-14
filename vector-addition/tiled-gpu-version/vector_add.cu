@@ -1,9 +1,12 @@
 /*  Vector addition on the GPU: C = A + B  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <sys/time.h>
 
 #define SIZE 1000000
 #define BLOCKSIZE 32
+double cpu_timer = 0.0;
 
 /** Device function (i.e. kernel)
   Reading 2 * 4 * SIZE bytes
@@ -19,6 +22,21 @@ __global__ void VecAdd(float * A, float * B, float * C, int N)
       C[i] = A[i] + B[i];
    }
 
+}
+
+// for timing host execution
+void timeit(int mode)
+{
+
+   static struct timeval tv[2];
+
+   gettimeofday(&tv[mode],NULL); // from sys/time.h
+   if ( mode )
+      cpu_timer +=
+         (double) ( tv[1].tv_usec - 
+                    tv[0].tv_usec  ) / 1000 +
+         (double) ( tv[1].tv_sec - 
+                    tv[0].tv_sec);
 }
 
 // CPU version of the vector addition function
@@ -132,16 +150,13 @@ int main( int argc, char ** argv )
 
    // verify that we got correct results
    float * gold_C = (float *)malloc( vec_bytes );
-   cudaEventRecord(start);
+   timeit(0);
    vecAddCPU( h_A, h_B, gold_C, SIZE );
-   cudaEventRecord(stop);
-   cudaEventSynchronize(stop);
-   milliseconds = 0;
-   cudaEventElapsedTime(&milliseconds, start, stop);
-   printf("cpu function time (ms) : %7.5f\n",milliseconds);
+   timeit(1);
+   printf("cpu function time (ms) : %7.5f\n",cpu_timer);
    printf("effective host bandwidth (GB/s): %5.3f\n",
           ( 3.0f * 4.0f * (float)SIZE / 1.0e9 ) / 
-          ( milliseconds / 1.0e3 ) );
+          ( cpu_timer / 1.0e3 ) );
    compareVecs( gold_C, h_C, SIZE );
 
    // clean up timer variables

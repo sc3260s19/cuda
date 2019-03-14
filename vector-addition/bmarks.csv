@@ -1,0 +1,6 @@
+Parallel Implementation, Bandwidth (GB/s)
+Serial, 4.4
+OpenMP - 2 cores, 2.8 
+OpenMP - 4 cores, 2.6
+OpenMP - 8 cores, 2.7
+CUDA - tiled, 201.0
